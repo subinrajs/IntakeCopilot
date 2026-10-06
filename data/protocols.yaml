@@ -1,0 +1,347 @@
+# Protocol book for the fictional clinic. DEMO CONTENT: short and conventional, not clinical
+# guidance. Protocols and indications are to be reviewed by the clinic's radiologists.
+#
+# Each entry becomes one retrieval document (name, modality, body part, contrast, indications)
+# and one embedding. contrast: none | iv | optional.
+version: 1
+protocols:
+  # ---------------------------------------------------------------- MRI: neuro
+  - id: MRI-BRAIN-ROUTINE
+    modality: MRI
+    body_part: brain
+    name: MRI brain without contrast
+    contrast: none
+    slot_minutes: 30
+    indications:
+      - chronic headache with atypical features
+      - cognitive decline or dementia workup
+      - chronic dizziness or vertigo, non-focal
+      - follow-up of stable non-enhancing finding
+
+  - id: MRI-BRAIN-WWO
+    modality: MRI
+    body_part: brain
+    name: MRI brain with and without contrast
+    contrast: iv
+    slot_minutes: 45
+    indications:
+      - known or suspected brain tumour
+      - screening for brain metastases in known cancer
+      - new seizure in adult
+      - suspected intracranial infection or abscess
+
+  - id: MRI-BRAIN-MS
+    modality: MRI
+    body_part: brain
+    name: MRI brain demyelination protocol
+    contrast: optional
+    slot_minutes: 45
+    indications:
+      - suspected multiple sclerosis, initial diagnosis
+      - MS follow-up and treatment monitoring
+      - optic neuritis
+
+  - id: MRI-BRAIN-PITUITARY
+    modality: MRI
+    body_part: brain
+    name: MRI pituitary (sella) with contrast
+    contrast: iv
+    slot_minutes: 40
+    indications:
+      - pituitary adenoma
+      - hyperprolactinemia or other pituitary hormone abnormality
+      - bitemporal visual field defect
+
+  - id: MRI-IAC
+    modality: MRI
+    body_part: internal auditory canals
+    name: MRI internal auditory canals with contrast
+    contrast: iv
+    slot_minutes: 35
+    indications:
+      - asymmetric sensorineural hearing loss
+      - unilateral tinnitus
+      - suspected vestibular schwannoma (acoustic neuroma)
+
+  - id: MRI-BRAIN-STROKE
+    modality: MRI
+    body_part: brain
+    name: MRI brain stroke protocol with MR angiography
+    contrast: none
+    slot_minutes: 35
+    indications:
+      - transient ischemic attack (TIA)
+      - subacute stroke or new focal neurological deficit
+      - suspected posterior circulation ischemia
+
+  # ---------------------------------------------------------------- MRI: spine
+  - id: MRI-C-SPINE
+    modality: MRI
+    body_part: cervical spine
+    name: MRI cervical spine without contrast
+    contrast: none
+    slot_minutes: 30
+    indications:
+      - neck pain with radiculopathy
+      - cervical myelopathy
+      - suspected cervical cord compression
+
+  - id: MRI-T-SPINE
+    modality: MRI
+    body_part: thoracic spine
+    name: MRI thoracic spine without contrast
+    contrast: none
+    slot_minutes: 30
+    indications:
+      - thoracic back pain with neurological signs
+      - thoracic myelopathy
+      - suspected thoracic disc herniation
+
+  - id: MRI-L-SPINE
+    modality: MRI
+    body_part: lumbar spine
+    name: MRI lumbar spine without contrast
+    contrast: none
+    slot_minutes: 30
+    indications:
+      - low back pain with radiculopathy or sciatica
+      - lumbar spinal stenosis or neurogenic claudication
+      - suspected cauda equina syndrome
+      - pre-surgical planning for disc herniation
+
+  - id: MRI-L-SPINE-WWO
+    modality: MRI
+    body_part: lumbar spine
+    name: MRI lumbar spine with and without contrast
+    contrast: iv
+    slot_minutes: 45
+    indications:
+      - post-operative spine, recurrent disc versus scar
+      - suspected discitis or vertebral osteomyelitis
+      - suspected spinal infection or epidural abscess
+
+  - id: MRI-SPINE-CORD-SCREEN
+    modality: MRI
+    body_part: whole spine
+    name: MRI whole spine screen for cord compression
+    contrast: none
+    slot_minutes: 45
+    indications:
+      - suspected malignant spinal cord compression
+      - known cancer with new back pain and neurological symptoms
+      - spinal metastases assessment
+
+  # ---------------------------------------------------------------- MRI: musculoskeletal
+  - id: MRI-KNEE
+    modality: MRI
+    body_part: knee
+    name: MRI knee without contrast
+    contrast: none
+    slot_minutes: 30
+    indications:
+      - suspected meniscal tear
+      - ligament injury (ACL, PCL, collateral)
+      - chronic knee pain or internal derangement
+      - osteochondral lesion
+
+  - id: MRI-SHOULDER
+    modality: MRI
+    body_part: shoulder
+    name: MRI shoulder without contrast
+    contrast: none
+    slot_minutes: 30
+    indications:
+      - suspected rotator cuff tear
+      - shoulder impingement
+      - shoulder instability or labral tear
+
+  - id: MRI-HIP
+    modality: MRI
+    body_part: hip
+    name: MRI hip without contrast
+    contrast: none
+    slot_minutes: 30
+    indications:
+      - avascular necrosis of the femoral head
+      - suspected occult hip fracture
+      - acetabular labral tear
+      - chronic hip pain with normal radiographs
+
+  - id: MRI-ANKLE
+    modality: MRI
+    body_part: ankle
+    name: MRI ankle without contrast
+    contrast: none
+    slot_minutes: 30
+    indications:
+      - ankle ligament injury
+      - Achilles or other tendon tear
+      - osteochondral lesion of the talus
+
+  # ---------------------------------------------------------------- MRI: body
+  - id: MRI-PROSTATE-MP
+    modality: MRI
+    body_part: prostate
+    name: Multiparametric MRI prostate
+    contrast: iv
+    slot_minutes: 40
+    indications:
+      - elevated PSA, prostate cancer detection
+      - active surveillance of known prostate cancer
+      - biopsy planning
+
+  - id: MRI-LIVER
+    modality: MRI
+    body_part: liver
+    name: MRI liver with contrast
+    contrast: iv
+    slot_minutes: 45
+    indications:
+      - characterization of indeterminate liver lesion
+      - hepatocellular carcinoma surveillance in cirrhosis
+      - liver metastases assessment
+
+  - id: MRI-MRCP
+    modality: MRI
+    body_part: abdomen
+    name: MRCP (MR cholangiopancreatography)
+    contrast: none
+    slot_minutes: 35
+    indications:
+      - suspected choledocholithiasis or biliary obstruction
+      - dilated bile ducts on ultrasound
+      - pancreatic duct abnormality or cystic pancreatic lesion
+
+  - id: MRI-PELVIS-FEMALE
+    modality: MRI
+    body_part: pelvis
+    name: MRI female pelvis
+    contrast: optional
+    slot_minutes: 45
+    indications:
+      - adnexal mass characterization
+      - uterine fibroids, pre-treatment planning
+      - suspected deep endometriosis
+
+  - id: MRI-BREAST
+    modality: MRI
+    body_part: breast
+    name: MRI breast with contrast
+    contrast: iv
+    slot_minutes: 40
+    indications:
+      - high-risk breast cancer screening
+      - extent of disease in newly diagnosed breast cancer
+      - response to neoadjuvant chemotherapy
+
+  # ---------------------------------------------------------------- CT: head and neck
+  - id: CT-HEAD-NC
+    modality: CT
+    body_part: head
+    name: CT head without contrast
+    contrast: none
+    slot_minutes: 15
+    indications:
+      - head trauma
+      - sudden severe (thunderclap) headache
+      - suspected intracranial hemorrhage
+      - acute stroke symptoms
+
+  - id: CT-HEAD-C
+    modality: CT
+    body_part: head
+    name: CT head with contrast
+    contrast: iv
+    slot_minutes: 20
+    indications:
+      - brain metastases when MRI is contraindicated
+      - suspected brain abscess when MRI is contraindicated
+
+  - id: CT-ANGIO-HEAD-NECK
+    modality: CT
+    body_part: head and neck
+    name: CT angiography head and neck
+    contrast: iv
+    slot_minutes: 25
+    indications:
+      - carotid stenosis assessment after TIA
+      - suspected intracranial aneurysm
+      - vertebral artery dissection
+
+  - id: CT-SINUS
+    modality: CT
+    body_part: sinuses
+    name: CT sinuses without contrast
+    contrast: none
+    slot_minutes: 15
+    indications:
+      - chronic rhinosinusitis
+      - pre-operative planning for endoscopic sinus surgery
+
+  # ---------------------------------------------------------------- CT: chest
+  - id: CT-CHEST-C
+    modality: CT
+    body_part: chest
+    name: CT chest with contrast
+    contrast: iv
+    slot_minutes: 20
+    indications:
+      - lung cancer staging
+      - mediastinal or hilar mass
+      - complicated pneumonia or empyema
+
+  - id: CT-CHEST-LD
+    modality: CT
+    body_part: chest
+    name: Low-dose CT chest without contrast
+    contrast: none
+    slot_minutes: 15
+    indications:
+      - lung cancer screening in high-risk smoker
+      - pulmonary nodule follow-up
+      - interstitial lung disease assessment
+
+  - id: CT-CTPA
+    modality: CT
+    body_part: chest
+    name: CT pulmonary angiography
+    contrast: iv
+    slot_minutes: 20
+    indications:
+      - suspected pulmonary embolism
+      - pleuritic chest pain with shortness of breath and elevated D-dimer
+
+  # ---------------------------------------------------------------- CT: abdomen and pelvis
+  - id: CT-ABD-PELVIS-C
+    modality: CT
+    body_part: abdomen and pelvis
+    name: CT abdomen and pelvis with contrast
+    contrast: iv
+    slot_minutes: 20
+    indications:
+      - acute or persistent abdominal pain
+      - suspected intra-abdominal abscess
+      - suspected appendicitis or diverticulitis
+      - abdominal malignancy staging
+
+  - id: CT-KUB
+    modality: CT
+    body_part: abdomen and pelvis
+    name: CT kidneys, ureters and bladder without contrast
+    contrast: none
+    slot_minutes: 15
+    indications:
+      - renal colic
+      - suspected kidney or ureteric stones
+      - follow-up of known urolithiasis
+
+  - id: CT-CAP-C
+    modality: CT
+    body_part: chest, abdomen and pelvis
+    name: CT chest, abdomen and pelvis with contrast
+    contrast: iv
+    slot_minutes: 25
+    indications:
+      - new malignancy staging
+      - metastatic workup or restaging
+      - lymphoma staging and response assessment

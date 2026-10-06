@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: intake_owner
+          POSTGRES_PASSWORD: owner_ci_password
+          POSTGRES_DB: intakecopilot
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U intake_owner -d intakecopilot"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_MIGRATION_URL: postgresql://intake_owner:owner_ci_password@localhost:5432/intakecopilot
+      DATABASE_URL: postgresql://intake_app:app_ci_password@localhost:5432/intakecopilot
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - name: Create app login role
+        run: |
+          PGPASSWORD=owner_ci_password psql -h localhost -U intake_owner -d intakecopilot -c "
+            CREATE ROLE app_role NOLOGIN;
+            CREATE ROLE intake_app LOGIN PASSWORD 'app_ci_password' IN ROLE app_role;"
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy intake tests
+      - run: uv run python -m intake.migrate
+      - run: uv run pytest
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build

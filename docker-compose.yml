@@ -1,0 +1,22 @@
+# Local development database. Production uses managed Postgres (Supabase/Neon, Canadian region).
+# Port 5433 so it can run alongside ClinicVoice's database on 5432.
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: intake_owner
+      POSTGRES_PASSWORD: owner_dev_password
+      POSTGRES_DB: intakecopilot
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intake_owner -d intakecopilot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
