@@ -1,0 +1,77 @@
+# Contrast safety and red-flag rules. DEMO VALUES: thresholds and phrase lists are to be set by
+# the clinic's Medical Director. Rules can add flags or raise urgency, never lower them.
+#
+# `when` is a small expression language (evaluated by intake/rules/engine.py, not eval):
+#   and / or / not, == != < <= > >=, in / not in, is None, string and number literals, lists,
+#   and the functions days_since(date) and any_match(list, terms).
+# Variables: modality ('MRI'|'CT'), contrast (effective contrast for this exam: 'iv', 'none',
+#   or 'optional' when the protocol makes it optional and the request does not say),
+#   contrast_requested, egfr, egfr_date, allergies, medications, plus every name in params.
+# A comparison involving a missing value is false.
+version: 1
+params:
+  egfr_recency_days: 90
+  egfr_review_threshold: 30
+  contrast_allergy_terms: [contrast, gadolinium, gadobutrol, gadoterate, iodinated, iodine,
+                           iohexol, iopamidol, omnipaque, gadovist, dotarem]
+  metformin_terms: [metformin, glucophage, janumet, synjardy, xigduo, jentadueto]
+
+rules:
+  - id: egfr_missing
+    when: contrast in ['iv', 'optional'] and egfr is None
+    result: needs_labs
+    message: No eGFR on the requisition for a contrast exam.
+  - id: egfr_stale
+    when: contrast in ['iv', 'optional'] and days_since(egfr_date) > egfr_recency_days
+    result: needs_labs
+    message: eGFR older than {egfr_recency_days} days.
+  - id: egfr_low
+    when: contrast in ['iv', 'optional'] and egfr < egfr_review_threshold
+    result: needs_review
+    message: eGFR {egfr} is below the review threshold of {egfr_review_threshold}.
+  - id: prior_reaction
+    when: contrast in ['iv', 'optional'] and any_match(allergies, contrast_allergy_terms)
+    result: needs_review
+    message: Prior contrast reaction recorded; premedication decision needed.
+  - id: metformin_iodinated
+    when: modality == 'CT' and contrast == 'iv' and any_match(medications, metformin_terms)
+    result: needs_review
+    message: Metformin with iodinated contrast; check local policy.
+
+# Phrases matched anywhere in the document text (whole words, case-insensitive), unless a
+# negation cue ("no", "denies", "without", ...) precedes them in the same clause.
+red_flags:
+  P1:
+    - cord compression
+    - cauda equina
+    - saddle anaesthesia
+    - saddle anesthesia
+    - urinary retention
+    - difficulty passing urine
+    - weakness in both legs
+    - bilateral leg weakness
+    - leg weakness
+    - numbness below the chest
+    - sensory level
+    - new focal deficit
+    - focal neurological deficit
+    - facial droop
+    - slurred speech
+    - word-finding difficulty
+    - arm weakness
+    - stroke symptoms
+    - TIA
+    - transient ischemic attack
+    - worst headache
+    - thunderclap
+  P2:
+    - newly diagnosed
+    - staging
+    - abscess
+    - discitis
+    - osteomyelitis
+    - epidural abscess
+    - pulmonary embolism
+    - seizure
+    - hemoptysis
+    - myelopathy

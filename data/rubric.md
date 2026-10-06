@@ -28,6 +28,7 @@ prompt, the gold labels and the README, so all three always agree.
 - Suspected abscess, discitis or other deep infection.
 - New seizure in an adult.
 - Suspected pulmonary embolism in a stable outpatient.
+- Progressive myelopathy symptoms over weeks to months.
 
 **P3**
 - Radiculopathy or sciatica without neurological deficit, under 3 months.

@@ -14,7 +14,7 @@ pytestmark = pytest.mark.db
 
 
 @pytest.fixture
-def app_conn() -> Iterator[psycopg.Connection[tuple[object, ...]]]:
+def app_conn(db_ready: None) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
     with psycopg.connect(get_settings().database_url) as conn:
         yield conn
         conn.rollback()
@@ -62,6 +62,6 @@ def test_override_without_reason_is_rejected_by_the_database(
         )
 
 
-def test_readyz_reaches_the_database() -> None:
+def test_readyz_reaches_the_database(db_ready: None) -> None:
     with TestClient(app) as client:
         assert client.get("/readyz").json() == {"status": "ready"}
