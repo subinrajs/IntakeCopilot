@@ -7,6 +7,7 @@ rules over the whole document, not just the extracted fields (ADR 0003).
 """
 
 import io
+import threading
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any, Literal
@@ -20,6 +21,10 @@ MIN_TEXT_LAYER_CHARS = 40  # fewer than this and the page is treated as a scan
 MAX_PAGES = 10
 
 TextSource = Literal["text_layer", "ocr"]
+
+# PDFium is not thread-safe, and the worker thread, eval runs and the API can all render. Every
+# use of PDFium (and the shared OCR engine) in this process goes through this lock.
+PDFIUM_LOCK = threading.RLock()
 
 
 @dataclass(frozen=True)
@@ -161,8 +166,9 @@ def render_image(data: bytes) -> list[RenderedPage]:
 
 
 def render_document(data: bytes, content_type: str) -> list[RenderedPage]:
-    if content_type == "application/pdf":
-        return render_pdf(data)
-    if content_type in ("image/png", "image/jpeg"):
-        return render_image(data)
+    with PDFIUM_LOCK:
+        if content_type == "application/pdf":
+            return render_pdf(data)
+        if content_type in ("image/png", "image/jpeg"):
+            return render_image(data)
     raise UnreadableDocument(f"unsupported content type {content_type}")

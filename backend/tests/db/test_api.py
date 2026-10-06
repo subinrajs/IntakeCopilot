@@ -121,7 +121,9 @@ ENDPOINTS: list[tuple[str, str, set[str]]] = [
 def test_role_checks_on_every_endpoint(
     db_ready: None, method: str, path: str, allowed: set[str], role: str
 ) -> None:
-    response = client_for(role).request(method, path, json={})
+    # A real eval run starts for the admin: keep it to one case.
+    body = {"limit": 1} if path == "/api/eval/runs" else {}
+    response = client_for(role).request(method, path, json=body)
     if role in allowed:
         assert response.status_code != 403, response.text
     else:

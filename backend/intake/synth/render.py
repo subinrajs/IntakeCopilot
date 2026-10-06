@@ -31,6 +31,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from intake.documents.pages import PDFIUM_LOCK
 from intake.synth.build import Requisition
 
 CLINIC = "LAKESHORE MRI &amp; CT"
@@ -302,9 +303,11 @@ def degrade(pdf_bytes: bytes, level: str, seed: int) -> bytes:
     rng = np.random.default_rng(seed)
     py_rng = random.Random(seed)
     pages: list[Image.Image] = []
-    document = pdfium.PdfDocument(pdf_bytes)
-    for page in document:
-        image = page.render(scale=200 / 72).to_pil().convert("L")
+    with PDFIUM_LOCK:
+        document = pdfium.PdfDocument(pdf_bytes)
+        rasters = [page.render(scale=200 / 72).to_pil().convert("L") for page in document]
+        document.close()
+    for image in rasters:
         if level == "heavy":
             # Fax "standard" resolution: half the vertical resolution, then 1-bit.
             w, h = image.size
@@ -329,7 +332,6 @@ def degrade(pdf_bytes: bytes, level: str, seed: int) -> bytes:
             image.save(jpeg, format="JPEG", quality=55)
             image = Image.open(io.BytesIO(jpeg.getvalue())).convert("L")
         pages.append(image)
-    document.close()
     out = io.BytesIO()
     pages[0].save(out, format="PDF", save_all=True, append_images=pages[1:], resolution=200.0)
     return out.getvalue()
