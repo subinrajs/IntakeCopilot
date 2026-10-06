@@ -1,0 +1,52 @@
+# Render blueprint: the API + pipeline worker as one long-lived service (SSE needs a long-lived
+# process). Uploaded files and page images live on a persistent disk; the database is managed
+# Postgres with pgvector (Supabase or Neon, Canadian region where offered).
+# Secrets are marked sync: false and entered in the Render dashboard, never committed.
+services:
+  - type: web
+    name: intakecopilot-api
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: .
+    plan: starter
+    region: ohio
+    healthCheckPath: /readyz
+    # Migrations run as the schema owner before each deploy goes live.
+    preDeployCommand: python -m intake.migrate
+    disk:
+      name: intake-files
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_MIGRATION_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: LLM_BACKEND
+        value: openai
+      - key: OPENAI_EXTRACT_MODEL
+        value: gpt-5.5
+      - key: OPENAI_TRIAGE_MODEL
+        value: gpt-5.5
+      - key: OPENAI_PROTOCOL_MODEL
+        value: gpt-5.4-mini
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: SECURE_COOKIES
+        value: "true"
+      - key: SEED_STAFF_PASSWORD
+        sync: false
+      - key: RUN_WORKER
+        value: "true"
+      # Public demo protections.
+      - key: MAX_UPLOADS_PER_USER_PER_DAY
+        value: "40"
+      - key: DAILY_SPEND_CAP_USD
+        value: "5"
+      # Nightly demo reset at 08:00 UTC (3-4 AM Toronto), run by the worker.
+      - key: DEMO_RESET_UTC_HOUR
+        value: "8"
+      - key: SEED_ALLOW_RESET
+        value: "1"

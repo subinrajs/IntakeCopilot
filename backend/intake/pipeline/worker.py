@@ -8,6 +8,7 @@ block API requests.
 import asyncio
 import logging
 import threading
+from datetime import UTC, date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -62,6 +63,30 @@ async def _run_one(job: dict[str, Any], deps: PipelineDeps) -> None:
         queue.complete(conn, job["id"])
 
 
+async def maybe_reset_demo(last_reset: date | None) -> date | None:
+    """Public demo: once a day after DEMO_RESET_UTC_HOUR, restore the demo queue (runs in the
+    worker because a separate cron job cannot reach the web service's disk)."""
+    hour = get_settings().demo_reset_utc_hour
+    now = datetime.now(UTC)
+    if hour is None or now.hour < hour or last_reset == now.date():
+        return last_reset
+    from intake.seed import (
+        import_eval_snapshots,
+        load_demo_queue,
+        owner_connection,
+        reset_live_cases,
+    )
+
+    log.info("nightly demo reset")
+    with owner_connection() as conn:
+        reset_live_cases(conn)
+        import_eval_snapshots(conn)
+        conn.commit()
+        await load_demo_queue(conn)
+        conn.commit()
+    return now.date()
+
+
 async def run(stop: threading.Event) -> None:
     settings = get_settings()
     deps = PipelineDeps.create(make_llm())
@@ -69,7 +94,13 @@ async def run(stop: threading.Event) -> None:
     with db.connection() as conn:
         queue.reclaim_stuck(conn)
     log.info("worker started (backend=%s)", settings.llm_backend)
+    last_reset: date | None = datetime.now(UTC).date()  # never reset straight after a deploy
     while not stop.is_set():
+        try:
+            last_reset = await maybe_reset_demo(last_reset)
+        except Exception:
+            log.exception("demo reset failed")
+            last_reset = datetime.now(UTC).date()
         claimed = False
         if len(running) < settings.worker_concurrency:
             with db.connection() as conn:

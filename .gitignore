@@ -21,3 +21,6 @@ dist/
 storage/
 .DS_Store
 *.log
+storage-e2e/
+test-results/
+playwright-report/

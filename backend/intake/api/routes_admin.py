@@ -6,6 +6,7 @@ import uuid
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from intake import audit
@@ -18,6 +19,7 @@ from intake.protocols import Protocol
 from intake.retrieval import vector_literal
 from intake.settings import get_settings
 from intake.spend import spent_today_usd
+from intake.storage import get_storage
 
 router = APIRouter(prefix="/api", tags=["admin"])
 
@@ -189,3 +191,55 @@ def ops(conn: Conn, user: AdminUser) -> dict[str, Any]:
         "daily_spend_cap_usd": get_settings().daily_spend_cap_usd,
         "llm_backend": get_settings().llm_backend,
     }
+
+
+@router.get("/eval/runs/{run_id}/cases/{case_id}")
+def eval_case(run_id: uuid.UUID, case_id: uuid.UUID, conn: Conn, user: StaffUser) -> dict[str, Any]:
+    """Read-only view of one gold case as a given run processed it (dashboard drill-down)."""
+    gold = conn.execute("SELECT * FROM eval_cases WHERE requisition_id = %s", (case_id,)).fetchone()
+    run = conn.execute(
+        "SELECT per_case, repeat_of FROM eval_runs WHERE id = %s", (run_id,)
+    ).fetchone()
+    if gold is None or run is None:
+        raise HTTPException(404, "eval case not found")
+    steps = conn.execute(
+        """SELECT DISTINCT ON (step) id, step, valid, error, prompt_version, model, output,
+                  latency_ms, cost_usd, created_at
+           FROM pipeline_steps WHERE requisition_id = %s AND eval_run_id = %s
+           ORDER BY step, id DESC""",
+        (case_id, run_id),
+    ).fetchall()
+    pages = conn.execute(
+        "SELECT page_no, width_px AS width, height_px AS height, text_source "
+        "FROM requisition_pages WHERE requisition_id = %s ORDER BY page_no",
+        (case_id,),
+    ).fetchall()
+    scored = next((c for c in run["per_case"] or [] if c["requisition_id"] == str(case_id)), None)
+    return {"gold": gold, "steps": {s["step"]: s for s in steps}, "pages": pages, "score": scored}
+
+
+@router.get("/eval/cases/{case_id}/pages/{page_no}")
+def eval_case_page(case_id: uuid.UUID, page_no: int, conn: Conn, user: StaffUser) -> Response:
+    row = conn.execute(
+        "SELECT p.image_key FROM requisition_pages p JOIN requisitions r ON r.id = "
+        "p.requisition_id WHERE p.requisition_id = %s AND p.page_no = %s AND r.source = 'gold'",
+        (case_id, page_no),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(404, "page not found")
+    return Response(
+        get_storage().get(row["image_key"]),
+        media_type="image/png",
+        headers={"Cache-Control": "private, max-age=3600"},
+    )
+
+
+@router.get("/eval/prompts")
+def prompt_versions(user: StaffUser) -> dict[str, Any]:
+    """Prompt files available per step, and the versions the live pipeline uses."""
+    settings = get_settings()
+    versions: dict[str, list[str]] = {}
+    for path in sorted(settings.prompts_dir.glob("*.md")):
+        step, _, version = path.stem.partition(".")
+        versions.setdefault(step, []).append(version)
+    return {"available": versions, "live": settings.prompt_versions}

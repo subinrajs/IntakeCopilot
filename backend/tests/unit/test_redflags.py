@@ -78,3 +78,21 @@ def test_every_gold_p1_case_reaches_p1_from_rules_alone(matcher: RedFlagMatcher)
         f = case.fields
         text = "\n".join([f.clinical_indication, *f.relevant_history])
         assert matcher.floor(matcher.find(text)) == "P1", case.case_key
+
+
+def test_rules_on_rendered_pages_catch_every_p1_and_never_over_triage(
+    matcher: RedFlagMatcher,
+) -> None:
+    """The same check on what the pipeline actually scans: page text, OCR for the scans."""
+    from intake.documents.pages import render_document
+
+    data_dir = get_settings().data_dir
+    for case in load_gold_set(data_dir, "v1").cases:
+        pages = render_document(
+            (data_dir / "gold" / "v1" / case.file).read_bytes(), "application/pdf"
+        )
+        floor = matcher.floor(matcher.find("\n".join(p.text.text for p in pages)))
+        if case.priority == "P1":
+            assert floor == "P1", case.case_key
+        if floor is not None:
+            assert PRIORITIES.index(floor) >= PRIORITIES.index(case.priority), case.case_key

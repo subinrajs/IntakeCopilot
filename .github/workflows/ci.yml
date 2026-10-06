@@ -63,3 +63,87 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: intake_owner
+          POSTGRES_PASSWORD: owner_ci_password
+          POSTGRES_DB: intakecopilot
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U intake_owner -d intakecopilot"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      E2E_DATABASE_MIGRATION_URL: postgresql://intake_owner:owner_ci_password@localhost:5432/intakecopilot_e2e
+      E2E_DATABASE_URL: postgresql://intake_app:app_ci_password@localhost:5432/intakecopilot_e2e
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+        working-directory: backend
+      - name: Create app login role
+        run: |
+          PGPASSWORD=owner_ci_password psql -h localhost -U intake_owner -d intakecopilot -c "
+            CREATE ROLE app_role NOLOGIN;
+            CREATE ROLE intake_app LOGIN PASSWORD 'app_ci_password' IN ROLE app_role;"
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: web
+      - run: pnpm exec playwright install --with-deps chromium
+        working-directory: web
+      - run: pnpm e2e
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: web/test-results
+
+  # Real-model eval smoke test on 10 gold cases (design doc: every pull request). Skipped when
+  # the OPENAI_API_KEY secret is not configured; the full 60-case run is on demand.
+  eval-smoke:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      DATABASE_MIGRATION_URL: postgresql://intake_owner:owner_ci_password@localhost:5432/intakecopilot
+      DATABASE_URL: postgresql://intake_app:app_ci_password@localhost:5432/intakecopilot
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: intake_owner
+          POSTGRES_PASSWORD: owner_ci_password
+          POSTGRES_DB: intakecopilot
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U intake_owner -d intakecopilot"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+        if: env.OPENAI_API_KEY != ''
+      - uses: astral-sh/setup-uv@v6
+        if: env.OPENAI_API_KEY != ''
+      - if: env.OPENAI_API_KEY != ''
+        run: |
+          uv sync --locked
+          PGPASSWORD=owner_ci_password psql -h localhost -U intake_owner -d intakecopilot -c "
+            CREATE ROLE app_role NOLOGIN;
+            CREATE ROLE intake_app LOGIN PASSWORD 'app_ci_password' IN ROLE app_role;"
+          uv run python -m intake.migrate
+          uv run python -m intake.seed
+          uv run python -m intake.eval --gold v1 --limit 10 --repeat 1 --label "CI smoke"

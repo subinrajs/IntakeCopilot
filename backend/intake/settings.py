@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     prompt_versions: dict[str, str] = {"extract": "v1", "triage": "v1", "protocol": "v1"}
 
     run_worker: bool = True
+    # Public demo only: reset live cases to the demo queue once a day at this UTC hour.
+    demo_reset_utc_hour: int | None = None
     worker_concurrency: int = 3
     session_secret: str = "dev-only-session-secret-change-me-0123456789"
     session_hours: int = 8
