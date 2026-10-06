@@ -31,6 +31,7 @@ os.environ["DATABASE_MIGRATION_URL"] = _with_db(_base.database_migration_url, TE
 os.environ["STORAGE_DIR"] = tempfile.mkdtemp(prefix="intake-test-storage-")
 os.environ["LLM_BACKEND"] = "dev-oracle"
 os.environ["OPENAI_API_KEY"] = ""
+os.environ["RUN_WORKER"] = "false"
 
 from intake.settings import get_settings  # noqa: E402
 

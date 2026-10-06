@@ -10,6 +10,7 @@ import hashlib
 import hmac
 import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Annotated, Literal
 
@@ -88,10 +89,17 @@ def current_user(request: Request) -> User:
 CurrentUser = Annotated[User, Depends(current_user)]
 
 
-def require_role(*roles: Role) -> object:
+def _role_dependency(*roles: Role) -> Callable[[User], User]:
     def dependency(user: CurrentUser) -> User:
         if user.role not in roles:
             raise HTTPException(status.HTTP_403_FORBIDDEN, f"requires role: {', '.join(roles)}")
         return user
 
-    return Depends(dependency)
+    return dependency
+
+
+StaffUser = Annotated[User, Depends(_role_dependency("intake", "radiologist", "admin"))]
+IntakeUser = Annotated[User, Depends(_role_dependency("intake", "admin"))]
+RadiologistUser = Annotated[User, Depends(_role_dependency("radiologist"))]
+ReviewerOrAdmin = Annotated[User, Depends(_role_dependency("radiologist", "admin"))]
+AdminUser = Annotated[User, Depends(_role_dependency("admin"))]
